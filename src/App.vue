@@ -1,28 +1,47 @@
 <template>
-  <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
-  </div>
+  <swiper>
+    <swiperitme v-for="(itme, id) in pic" :key="id">
+      <img :src="itme.image" alt="">
+    </swiperitme>
+  </swiper>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
+import swiper from 'components/swiper/swiper'
+import swiperitme from 'components/swiper/swiperitme'
+import pic1 from 'assets/img/1.jpg'
+import pic2 from 'assets/img/2.jpg'
+import pic3 from 'assets/img/3.jpg'
+import pic4 from 'assets/img/4.jpg'
 
 export default {
   name: 'App',
+  data() {
+    return {
+      pic: [
+        {
+          image:pic1
+        },
+        {
+          image:pic2
+        },
+        {
+          image:pic3
+        },
+        {
+          image:pic4
+        },
+        
+      ]
+    }
+  },
   components: {
-    HelloWorld
+    swiper,
+    swiperitme
   }
 }
 </script>
 
 <style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
+   
 </style>
