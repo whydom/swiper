@@ -1,8 +1,15 @@
 <template>
-  <div id="con-swiper">
+  <div id="con-swiper" @touchstart='touchstar' @touchmove='touchmove' @touchend='touchend'>
     <!-- 显示图片的位置 -->
     <div id="swiper">
       <slot></slot>
+    </div>
+
+    <!-- 小圆点设置 -->
+    <div id="indicator">
+      <slot name="indicator" v-if="slidecount > 1">
+        <div v-for="(itme, index) in slidecount" :key="index" class="indi-itme" :class="{active: index == currentindex - 1}"></div>
+      </slot>
     </div>
   </div>
 </template>
@@ -35,16 +42,20 @@
           this.currentindex++
           // 自动滚动开始,因为从右向左滚动，所以是负值,这个是让第二张图为首先显示，因为前后都插入了伪图
           this.scrollContent(-this.currentindex * this.totalwidth)
-          if(this.currentindex > this.slidecount){
-            this.currentindex = 0
-            this.swiperstyle.transition = `transform 0s`
-            this.settransform(-this.currentindex * this.totalwidth)
-          }
-          if(this.currentindex < 0) {
-            this.currentindex = this.slidecount + 1
-            this.settransform(-this.currentindex * this.totalwidth)
-          }
-          console.log(this.currentindex);
+
+          // 判断是否是到结尾或者开头了
+            // if(this.currentindex > this.slidecount){
+            //   this.swiperstyle.transition = `transform 0s`
+            //   this.settransform(0)
+            //   this.currentindex = 1
+            // }
+            // if(this.currentindex < 0) {
+            //   this.currentindex = this.slidecount + 1
+            //   this.settransform(-this.currentindex * this.totalwidth)
+            // }
+            // console.log(this.currentindex);
+            this.checkPosition()
+          
         },3000)
 
         
@@ -55,14 +66,36 @@
         window.clearInterval(this.timeplay)
       },
 
+      /**
+       * 校验正确的位置
+       */
+      checkPosition: function () {
+        window.setTimeout(() => {
+          // 1.校验正确的位置
+          this.swiperstyle.transition = `transform 0s`
+          if (this.currentindex >= this.slidecount + 1) {
+            this.currentindex = 1;
+            this.settransform(-this.currentindex * this.totalwidth);
+          } else if (this.currentindex <= 0) {
+            this.currentindex = this.slidecount;
+            this.settransform(-this.currentindex * this.totalwidth);
+          }
+
+          // 2.结束移动后的回调
+          this.$emit('transitionEnd', this.currentindex-1);
+        }, 300)
+      },
+
       // 滚动开始
       scrollContent(currentposition) {
         // 滚动状态为true
         this.scrolling = true
         // 设置滚动的过渡时间
-        this.swiperstyle.transition = `transform 3s`
+        this.swiperstyle.transition = `transform 2s ease-in-out`
         // 滚动到合适的位置
         this.settransform(currentposition)
+        // 滚动完成
+        this.scrolling = false
       },
 
       // 设置滚动位置
@@ -107,21 +140,64 @@
 
       // 拖动图片
       // 触摸开始
-      // touchstar(event) {
-      //   // 如果正在滚动，则不能拖动
-      //   if(this.scrolling) {
-      //     return
-      //   }
-      //   this.startx = event.touches[0].pageX
-      // },
+      touchstar(event) {
+        // 如果正在滚动，则不能拖动
+        if(this.scrolling) {
+          return
+        }
+        // 停止定时器
+        this.stoptime()
+        // 获取触摸时的坐标
+        this.startx = event.touches[0].pageX
+      },
 
-      // // 触摸中
-      // touchmove(event) {
-      //   this.currentx = event.touches[0].pageX
-      //   this.distance = this.currentx - this.startx
-      //   // 利用transform的translate属性改为swiper的
-      //   this.swiperstyle.transform = `translate(${this.distance}px, 0)`
-      // }
+      // 触摸中
+      touchmove(event) {
+        this.currentx = event.touches[0].pageX
+        this.distance = this.currentx - this.startx
+        let currentpic = (-this.currentindex * this.totalwidth)
+        let moveposition = this.distance + currentpic
+        this.swiperstyle.transition = `transform 0s`
+        this.settransform(moveposition)
+      },
+
+      // 触摸结束
+      touchend() {
+        let currentmove = Math.abs(this.distance)
+        if(this.distance == 0) {
+          return
+        }else if(this.distance > 0 && currentmove > this.totalwidth * 0.25) {
+          this.currentindex--
+        }else if(this.distance < 0 && currentmove > this.totalwidth * 0.25) {
+          this.currentindex++
+        }
+        // 滚动到正确的位置
+        this.scrollContent(-this.currentindex * this.totalwidth)
+        // 重新开启定时器，定时器就是自动滚动
+        this.starttime()
+      },
+      /**
+       * 控制上一个, 下一个
+       */
+      previous: function () {
+        this.changeItem(-1);
+      },
+
+      next: function () {
+        this.changeItem(1);
+      },
+
+      changeItem: function (num) {
+        // 1.移除定时器
+        this.stopTimer();
+
+        // 2.修改index和位置
+        this.currentIndex += num;
+        this.scrollContent(-this.currentIndex * this.totalWidth);
+
+        // 3.添加定时器
+        this.startTimer();
+      }
 
     },
   }
@@ -133,5 +209,24 @@
   }
   #swiper {
     display: flex;
+  }
+  #indicator {
+    display: flex;
+    justify-content: center;
+    position: absolute;
+    bottom: 8px;
+    width: 100%;
+    height: 8px;
+    
+  }
+  #indicator > .indi-itme {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #fff;
+    margin: 0 5px;
+  }
+  #indicator > .indi-itme.active {
+    background-color: #f00;
   }
 </style>
